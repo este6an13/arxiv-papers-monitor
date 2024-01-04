@@ -27,6 +27,7 @@ def get_month_id():
     month_id = year + month
     return month_id
 
+'''
 KEYWORDS = [
             'explaina',
             'network',
@@ -59,10 +60,13 @@ KEYWORDS = [
             'interpret',
             'quan'
             ]
+'''
 CATEGORIES = ['cs.AI', 'cs.CC', 'cs.CL', 'cs.CR', 'cs.FL', 'cs.LG', 'cs.MA', 'cs.NE', 'cs.PL', 'cs.SI']
 
+KEYWORDS = ['review', 'survey', 'art', 'overview']
+
 # month_id = get_month_id()
-month_id = 2310
+month_id = 2401
 id = get_previous_id()
 
 while True:
@@ -73,10 +77,15 @@ while True:
         write_last_id(ID)
         if result == None:
             break
+        '''
         # if category and (two or more keywords or review/survey)
         if any([cat in result.categories for cat in CATEGORIES]) and \
         ([kw in result.title.lower() for kw in KEYWORDS].count(True) > 1 or \
          any(kw in result.title.lower() for kw in ['review', 'survey'])):
+        '''
+        if any([cat in result.categories for cat in CATEGORIES]) and \
+           any(kw in result.title.lower() for kw in ['review', 'survey']):
+            #print(result.summary)
             print(result.title)
             print(result.pdf_url)
             print(result.categories)
