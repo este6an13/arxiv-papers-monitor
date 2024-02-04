@@ -1,97 +1,51 @@
 import arxiv
 import time
+import pandas as pd
 
-def get_previous_id():
-    with open('id.txt') as f:
-        PREVIOUS_ID = f.readline()
-    id = int(PREVIOUS_ID.split('.')[1])
-    return id
+columns = ['URL', 'Title', 'Categories']
+data = []
 
-def write_last_id(id):
-    with open('id.txt', 'w') as f:
-        f.write(id)
-
-def search_by_id(id):
-    search = arxiv.Search(id_list = [id])
-    results = list(search.results())
-    if len(results) > 0:
-        return results[0]
-    return None
-
-# not used yet
-def get_month_id():
-    from datetime import datetime  
-    today = datetime.today()
-    year = today.strftime("%y")
-    month = today.strftime("%m")
-    month_id = year + month
-    return month_id
-
-'''
-KEYWORDS = [
-            'explaina',
-            'network',
-            'priva',
-            'comput',
-            'graph',
-            'physics',
-            'algorithm',
-            'language',
-            'topo',
-            'agent',
-            'reservoir',
-            'informed',
-            'kernel',
-            'search',
-            'ensemble',
-            'simulat',
-            'attack',
-            'knowledge',
-            'decidab',
-            'heterogen',
-            'emergen',
-            'complex',
-            'bio',
-            'hallucinat',
-            'healthcare',
-            'discover',
-            'ontolog',
-            'align',
-            'interpret',
-            'quan'
-            ]
-'''
-CATEGORIES = ['cs.AI', 'cs.CC', 'cs.CL', 'cs.CR', 'cs.FL', 'cs.LG', 'cs.MA', 'cs.NE', 'cs.PL', 'cs.SI']
-
-KEYWORDS = ['review', 'survey', 'art', 'overview']
-
-# month_id = get_month_id()
 month_id = 2401
-id = get_previous_id()
 
-while True:
-    zpid = str(id).zfill(5) # zero padded id
-    ID = f'{month_id}.{zpid}'
-    try:
-        result = search_by_id(ID)
-        write_last_id(ID)
-        if result == None:
+query = "(ti:survey OR ti:review OR ti:art OR ti:overview) AND " + \
+        "(cat:cs.AI OR cat:cs.CC OR cat:cs.CL OR cat:cs.CR OR " + \
+        "cat:cs.FL OR cat:cs.LG OR cat:cs.MA OR cat:cs.NE OR " + \
+        "cat:cs.PL OR cat:cs.SI)"
+
+start_id = 1
+end_id = 1000
+group_size = 100
+
+for start_group_id in range(start_id, end_id, group_size):
+    end_group_id = min(start_group_id + group_size, end_id)
+
+    ids = range(start_group_id, end_group_id)
+    zpids = [str(id).zfill(5) for id in ids]
+    article_ids = [f'{month_id}.{zpid}' for zpid in zpids]
+
+    client = arxiv.Client()
+    search = arxiv.Search(query=query, id_list=article_ids)
+    gen = client.results(search)
+
+    while True:
+        try:
+            result = next(gen)
+            title = result.title
+            url = result.pdf_url
+            categories = sorted(result.categories)
+            data.append([url, title, ', '.join(categories)])
+        except StopIteration:
             break
-        '''
-        # if category and (two or more keywords or review/survey)
-        if any([cat in result.categories for cat in CATEGORIES]) and \
-        ([kw in result.title.lower() for kw in KEYWORDS].count(True) > 1 or \
-         any(kw in result.title.lower() for kw in ['review', 'survey'])):
-        '''
-        if any([cat in result.categories for cat in CATEGORIES]) and \
-           any(kw in result.title.lower() for kw in ['review', 'survey']):
-            #print(result.summary)
-            print(result.title)
-            print(result.pdf_url)
-            print(result.categories)
-            print()
-        id += 1
-    except Exception as e:
-        print(e)
-        time.sleep(60)
-        continue
+
+    # Process the data as needed, for example, write to Excel or another storage format
+    print(f"Processed IDs {start_group_id} to {end_group_id - 1}")
+    time.sleep(5)  # Add a delay as needed to avoid overloading the API
+
+# Create a DataFrame from the collected data
+df = pd.DataFrame(data, columns=columns)
+
+# Write the DataFrame to an Excel file
+excel_file_path = 'articles.xlsx'
+df.to_excel(excel_file_path, index=False)
+
+print(f"Data written to {excel_file_path}")
