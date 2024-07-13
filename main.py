@@ -1,19 +1,34 @@
 import arxiv
 import time
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Font
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 columns = ['URL', 'Title', 'Categories']
 data = []
 
-month_id = 2401
+month_id = 2406
 
-query = "(ti:survey OR ti:review OR ti:art OR ti:overview) AND " + \
-        "(cat:cs.AI OR cat:cs.CC OR cat:cs.CL OR cat:cs.CR OR " + \
-        "cat:cs.FL OR cat:cs.LG OR cat:cs.MA OR cat:cs.NE OR " + \
-        "cat:cs.PL OR cat:cs.SI)"
+
+query = "(ti:survey OR ti:review OR ti:art OR ti:overview OR ti:advances) AND " + \
+        "(cat:cs.AI OR cat:cs.AR OR cat:cs.CC OR cat:cs.CE OR cat:cs.CG OR " + \
+        "cat:cs.CL OR cat:cs.CR OR cat:cs.CV OR cat:cs.CY OR cat:cs.DB OR " + \
+        "cat:cs.DC OR cat:cs.DL OR cat:cs.DM OR cat:cs.DS OR cat:cs.ET OR " + \
+        "cat:cs.FL OR cat:cs.GL OR cat:cs.GR OR cat:cs.GT OR cat:cs.HC OR " + \
+        "cat:cs.IR OR cat:cs.IT OR cat:cs.LG OR cat:cs.LO OR cat:cs.MA OR " + \
+        "cat:cs.MM OR cat:cs.MS OR cat:cs.NA OR cat:cs.NE OR cat:cs.NI OR " + \
+        "cat:cs.OH OR cat:cs.OS OR cat:cs.PF OR cat:cs.PL OR cat:cs.RO OR " + \
+        "cat:cs.SC OR cat:cs.SD OR cat:cs.SE OR cat:cs.SI OR cat:cs.SY)"
+
+"""
+query = "(ti:survey OR ti:review OR ti:art OR ti:overview OR ti:advances) AND " + \
+        "(cat:stat.AP OR cat:stat.CO OR cat:stat.ME OR cat:stat.ML OR " + \
+        "cat:stat.OT OR cat:stat.TH)"
+"""
 
 start_id = 1
-end_id = 1000
+end_id = 25000
 group_size = 100
 
 for start_group_id in range(start_id, end_id, group_size):
@@ -44,8 +59,21 @@ for start_group_id in range(start_id, end_id, group_size):
 # Create a DataFrame from the collected data
 df = pd.DataFrame(data, columns=columns)
 
-# Write the DataFrame to an Excel file
+# Create a new workbook and select the active sheet
+wb = Workbook()
+ws = wb.active
+
+# Write the DataFrame to the worksheet
+for r in dataframe_to_rows(df, index=False, header=True):
+    ws.append(r)
+
+# Apply hyperlink style to the URL column
+for cell in ws['A'][1:]:  # Assuming 'URL' is in column A
+    cell.hyperlink = cell.value
+    cell.font = Font(color="0000FF", underline="single")  # Blue, underlined text
+
+# Save the workbook
 excel_file_path = 'articles.xlsx'
-df.to_excel(excel_file_path, index=False)
+wb.save(excel_file_path)
 
 print(f"Data written to {excel_file_path}")
